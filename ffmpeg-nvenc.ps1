@@ -10,7 +10,6 @@ $season = "S01"
 $extension = ".m3u8"
 
 foreach ($episode in $episodes) {
-
     if ($episode -eq "hls") { continue }
 
     $import_episode = $base_folder + $episode
@@ -24,22 +23,25 @@ foreach ($episode in $episodes) {
         mkdir $full_output_path
     }
 
-    if (!(Test-Path $output_file)) {
-        Add-Content (Get-Date -Format ("yyyy-MM-dd HH:mm:ss")) -Path $log
-        Add-Content "Write-Host Converting $import_episode" -Path $log
+    if ($full_episode_name -like "S01E*") {
+        if (!(Test-Path $output_file)) {
+            Add-Content (Get-Date -Format ("yyyy-MM-dd HH:mm:ss")) -Path $log
+            Add-Content "Write-Host Converting $import_episode" -Path $log
 
-        . $ffmpeg_nvenc -hwaccel cuda -hwaccel_output_format cuda `
-            -i $import_episode `
-            -c:a copy -c:v copy `
-            -flags +cgop -g 30 `
-            -hls_time 1 `
-            -hls_playlist_type event `
-            $output_file
-        
-        Add-Content Get-Date -Format ("yyyy-MM-dd HH:mm:ss") -Path $log
-        Add-Content "Completed $full_episode_name" -Path $log
-    } else {
-        Add-Content "Already Completed $full_episode_name" -Path $log
-        Write-Host "Already completed $full_episode_name"
+            . $ffmpeg_nvenc -hwaccel cuda -hwaccel_output_format cuda `
+                -i $import_episode `
+                -c:a copy -c:v h264_nvenc `
+                -b:v 512K `
+                -flags +cgop -g 30 `
+                -hls_time 1 `
+                -hls_playlist_type event `
+                $output_file
+            
+            Add-Content(Get-Date -Format ("yyyy-MM-dd HH:mm:ss")) -Path $log
+            Add-Content "Completed $full_episode_name" -Path $log
+        } else {
+            Add-Content "Already Completed $full_episode_name" -Path $log
+            Write-Host "Already completed $full_episode_name"
+        }
     }
 }
